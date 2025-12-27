@@ -1,0 +1,19 @@
+def build_amharic_ssml(text: str, voice_name: str = "am-ET-MekdesNeural", rate: str = "-3%") -> str:
+    """
+    Azure SSML builder for Amharic (am-ET)
+    - voice_name: try "am-ET-MekdesNeural" or "am-ET-AmehaNeural"
+    - rate: e.g. "-5%", "0%", "+5%"
+    """
+    safe = text.strip().replace("&", "and")  # basic safety
+    ssml = f"""
+<speak version="1.0"
+       xmlns="http://www.w3.org/2001/10/synthesis"
+       xml:lang="am-ET">
+  <voice name="{voice_name}">
+    <prosody rate="{rate}" pitch="0%">
+      {safe}
+    </prosody>
+  </voice>
+</speak>
+""".strip()
+    return ssml

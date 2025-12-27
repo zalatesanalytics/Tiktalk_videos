@@ -1,0 +1,18 @@
+import os
+from pathlib import Path
+import azure.cognitiveservices.speech as speechsdk
+
+def synthesize_ssml_to_wav(ssml: str, out_wav: Path) -> None:
+    key = os.environ["AZURE_SPEECH_KEY"]
+    region = os.environ["AZURE_SPEECH_REGION"]
+
+    speech_config = speechsdk.SpeechConfig(subscription=key, region=region)
+    speech_config.speech_synthesis_language = "am-ET"
+
+    audio_config = speechsdk.audio.AudioOutputConfig(filename=str(out_wav))
+    synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+
+    result = synthesizer.speak_ssml_async(ssml).get()
+    if result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
+        details = speechsdk.SpeechSynthesisCancellationDetails.from_result(result)
+        raise RuntimeError(f"TTS failed: {details.reason} | {details.error_details}")

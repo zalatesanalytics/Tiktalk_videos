@@ -1,0 +1,54 @@
+import re
+from pathlib import Path
+
+def split_amharic_lines(text: str, max_chars: int = 28) -> list[str]:
+    """
+    Simple splitter for Amharic-friendly subtitle lines.
+    """
+    text = re.sub(r"\s+", " ", text.strip())
+    # Split by Amharic/standard punctuation
+    parts = re.split(r"([።!?…])", text)
+    sentences = []
+    for i in range(0, len(parts), 2):
+        chunk = parts[i].strip()
+        punct = parts[i + 1] if i + 1 < len(parts) else ""
+        s = (chunk + punct).strip()
+        if s:
+            sentences.append(s)
+
+    lines = []
+    for s in sentences:
+        words = s.split(" ")
+        cur = ""
+        for w in words:
+            if len(cur) + len(w) + 1 <= max_chars:
+                cur = (cur + " " + w).strip()
+            else:
+                if cur:
+                    lines.append(cur)
+                cur = w
+        if cur:
+            lines.append(cur)
+
+    return lines or [text]
+
+def _fmt_srt_time(sec: float) -> str:
+    ms = int(round(sec * 1000))
+    h = ms // 3600000; ms %= 3600000
+    m = ms // 60000; ms %= 60000
+    s = ms // 1000; ms %= 1000
+    return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+def write_srt_equal_timing(lines: list[str], total_seconds: float, out_srt: Path) -> None:
+    """
+    Control subtitle timing to exactly total_seconds (e.g., 60.0).
+    """
+    n = max(1, len(lines))
+    seg = total_seconds / n
+    with out_srt.open("w", encoding="utf-8") as f:
+        for i, line in enumerate(lines, start=1):
+            start = (i - 1) * seg
+            end = i * seg
+            f.write(f"{i}\n")
+            f.write(f"{_fmt_srt_time(start)} --> {_fmt_srt_time(end)}\n")
+            f.write(f"{line}\n\n")

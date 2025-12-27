@@ -1,0 +1,58 @@
+import subprocess
+from pathlib import Path
+
+def render_tiktok_video(
+    background_mp4: Path,
+    voice_wav: Path,
+    subtitles_srt: Path,
+    out_mp4: Path,
+    music_mp3: Path | None = None
+) -> None:
+    w, h = 1080, 1920
+
+    # Burn subtitles into video
+    # NOTE: Arial is usually present on ubuntu runner; if subtitles show boxes, use a TTF font via assets/fonts and set force_style FontName accordingly.
+    vf = (
+        f"scale={w}:{h}:force_original_aspect_ratio=increase,"
+        f"crop={w}:{h},"
+        f"subtitles='{subtitles_srt.as_posix()}':"
+        f"force_style='FontName=Arial,FontSize=52,PrimaryColour=&H00FFFFFF,Outline=3,Shadow=1,MarginV=120'"
+    )
+
+    if music_mp3 and music_mp3.exists():
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", str(background_mp4),
+            "-i", str(voice_wav),
+            "-i", str(music_mp3),
+            "-filter_complex",
+            "[2:a]volume=0.15[a2];[1:a][a2]amix=inputs=2:duration=first:dropout_transition=2[aout]",
+            "-vf", vf,
+            "-map", "0:v:0",
+            "-map", "[aout]",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-shortest",
+            str(out_mp4)
+        ]
+    else:
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", str(background_mp4),
+            "-i", str(voice_wav),
+            "-vf", vf,
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-shortest",
+            str(out_mp4)
+        ]
+
+    subprocess.check_call(cmd)

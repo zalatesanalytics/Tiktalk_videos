@@ -1,0 +1,12 @@
+from datetime import datetime
+from pathlib import Path
+
+def pick_story_file(stories_dir: Path) -> Path:
+    files = sorted(stories_dir.glob("*.txt"))
+    if len(files) != 5:
+        raise ValueError("stories/ must contain exactly 5 files: 1.txt ... 5.txt")
+
+    # Deterministic daily rotation
+    day_of_year = int(datetime.utcnow().strftime("%j"))  # 1..366
+    idx = (day_of_year - 1) % 5
+    return files[idx]
